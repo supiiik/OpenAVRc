@@ -255,5 +255,5 @@ extern ISR(INT5_vect);
 #define HALF_MICRO_SEC_COUNTS(half_us) (half_us)
 
 #endif // SPIMODULES
-
+#define MULTIMODULE
 #endif // _BOARD_MEGA2560_H_
