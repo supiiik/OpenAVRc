@@ -76,6 +76,76 @@ extern uint8_t dsm2BindTimer;
 #define IS_SPIMODULES_PROTOCOL(protocol)  (0)
 #endif
 
+#if defined(MULTIMODULE)
+	#define IS_MULTIMODULE_PROTOCOL(protocol)  (protocol==PROTO_MULTIMODULE)
+	#define MULTIMODULE_BAUDRATE 100000
+	#define MAX_PULSES_TRANSITIONS 300
+
+	#define CROSSFIRE_FRAME_MAXLEN         64
+	#define CROSSFIRE_CHANNELS_COUNT       16
+    #define pulse_duration_t             uint16_t
+    #define trainer_pulse_duration_t     uint16_t
+	void putDsm2Flush();
+
+	PACK(struct Dsm2SerialPulsesData {
+  uint8_t  pulses[64];
+  uint8_t * ptr;
+  uint8_t  serialByte ;
+  uint8_t  serialBitCount;
+  uint16_t _alignment;
+});
+	
+	template<class T> struct PpmPulsesData {
+  T pulses[20];
+  T * ptr;
+};
+  PACK(struct CrossfirePulsesData {
+		uint8_t pulses[CROSSFIRE_FRAME_MAXLEN];
+	});
+	PACK(struct PxxTimerPulsesData {
+  pulse_duration_t pulses[200];
+  pulse_duration_t * ptr;
+  uint16_t rest;
+  uint16_t pcmCrc;
+  uint32_t pcmOnesCount;
+});
+PACK(struct Dsm2TimerPulsesData {
+  pulse_duration_t pulses[MAX_PULSES_TRANSITIONS];
+  pulse_duration_t * ptr;
+  uint16_t rest;
+  uint8_t index;
+});
+
+	union ModulePulsesData {
+	#if defined(PPM_PIN_SERIAL)
+	PxxSerialPulsesData pxx;
+	Dsm2SerialPulsesData dsm2;
+	#else
+	PxxTimerPulsesData pxx;
+	Dsm2TimerPulsesData dsm2;
+	#endif
+	#if defined(PPM_PIN_UART)
+		PxxUartPulsesData pxx_uart;
+	#endif
+	PpmPulsesData<pulse_duration_t> ppm;
+	CrossfirePulsesData crossfire;
+	} __ALIGNED;
+
+/* The __ALIGNED keyword is required to align the struct inside the modulePulsesData below,
+ * which is also defined to be __DMA  (which includes __ALIGNED) aligned.
+ * Arrays in C/C++ are always defined to be *contiguously*. The first byte of the second element is therefore always
+ * sizeof(ModulePulsesData). __ALIGNED is required for sizeof(ModulePulsesData) to be a multiple of the alignment.
+ */
+
+	extern ModulePulsesData modulePulsesData;
+	union TrainerPulsesData {
+  PpmPulsesData<trainer_pulse_duration_t> ppm;
+};
+
+#else
+	#define IS_MULTIMODULE_PROTOCOL(protocol)  (0)
+#endif
+
 #include "pulses_avr.h"
 
 #endif
